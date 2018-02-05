@@ -30,11 +30,11 @@ enum Value {
 }
 ```
 
-Currently, this enum has to store its discriminant separately from its payload, because all possible 64-bit values are valid bit patterns for the `f64` type. This makes the enum 8+4=12 bytes. However, there is a somewhat well-known memory-optimisation technique which could be used to reduce the size of this enum.
+Currently, this enum has to store its discriminant separately from its payload, because all possible 64-bit values are valid bit patterns for the `f64` type. This makes the enum at least 9 bytes long. However, there is a somewhat well-known memory-optimisation technique which could be used to reduce the size of this enum.
 
 The representation of IEEE 754 binary floats comprises (in order from the most-significant bit) a sign bit, the exponent part and the significand part. An infinity (+∞ and −∞) is represented by setting all exponent bits to 1 and all significand bits to 0; a NaN value is represented by setting all exponent bits to 1 and the significand part to an arbitrary non-zero value (called the *payload* in this context), which arithmetical operations ignore. This allows the significand part of a NaN value to be used to store arbitrary data; this technique is variously called NaN boxing or NaN tagging, and is commonly used by interpreters of dynamically-typed languages.
 
-A double-precision float (denoted in Rust as `f64`) contains 52 significand bits. If the target's endianness is consistent between floats and other kinds of data, this allows 5 bytes worth of data to be stored in the significand part of a double-precision float, and still leave 4 bits to store the discriminant. Even on ARM (which stores 64-bit floats in a 'middle-endian' form) one can still store a referenceable 32-bit datum inside a NaN payload.
+A double-precision float (denoted in Rust as `f64`) contains 52 significand bits. If the target's endianness is consistent between floats and other kinds of data, this allows 6 bytes worth of referenceable data to be stored in the significand part of a double-precision float, and still leave 4 bits to store the discriminant. Even on ARM (which stores 64-bit floats in a 'middle-endian' form) one can still store a referenceable 32-bit datum inside a NaN payload.
 
 If Rust provided floating-point types for which some NaN bit patterns are declared invalid, it would allow NaN tagging to be done by the compiler transparently.
 
