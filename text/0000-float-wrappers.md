@@ -84,6 +84,8 @@ Each wrapper type should implement `Copy` (`where T: Copy`), `TryFrom<T>`, `Into
 
 `NaNaN<T>` should implement `Ord` and `Eq` and provide `checked_add`, `checked_sub`, `checked_mul` and `checked_div`, with semantics analogous to `checked_` operations on integer types.
 
+The preferred way to create a values of these types is through `From` and `TryFrom`.
+
 # Drawbacks
 [drawbacks]: #drawbacks
 
