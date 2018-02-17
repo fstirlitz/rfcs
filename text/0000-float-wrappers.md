@@ -82,7 +82,7 @@ Each wrapper type should implement `Copy` (`where T: Copy`), `TryFrom<T>`, `Into
 
 `UniqNaN<T>` could additionally implement `From<T>`, which would normalise NaNs into their designated unique representations and store all other values as they are.
 
-`NaNaN<T>` should implement `Ord` and `Eq`.
+`NaNaN<T>` should implement `Ord` and `Eq` and provide `checked_add`, `checked_sub`, `checked_mul` and `checked_div`, with semantics analogous to `checked_` operations on integer types.
 
 # Drawbacks
 [drawbacks]: #drawbacks
