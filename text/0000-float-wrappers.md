@@ -47,7 +47,6 @@ The LLVM IR provides a number of [annotations](https://llvm.org/docs/LangRef.htm
 
 When working with floating-point values a lot, you may sometimes find it useful to restrict the range of values representable by a floating-point type. To accomplish this, you can put the floating-point type in a wrapper:
 
-- `Finite<_>` if you only need to represent finite values;
 - `NaNaN<_>` if you need to represent finite or infinite values, but not NaNs;
 - `UniqNaN<_>` if you need to represent all floating-point values, but you do not need to remember the payload of NaN values.
 
@@ -57,7 +56,7 @@ For example:
 
 ```rust
 /* let mut iterator: impl Iterator<f64> = ...; */
-let mut histogram: BTreeMap<Finite<f64>, usize> = HashMap::new();
+let mut histogram: BTreeMap<NaNaN<f64>, usize> = HashMap::new();
 
 for datum in iterator {
 	if let Ok(v) = datum.try_from() {
@@ -76,7 +75,6 @@ for datum in iterator {
 The following additions should be made to `core` (re-exported to `std`):
 
 - A marker trait (possibly unsafe) `Ieee754` that would be implemented only by `f32` and `f64` types. Should more IEEE floating-point formats be added to Rust, they shall implement this trait as well.
-- A lang-item type `Finite<T: Ieee754>`, which wraps a `T` value guaranteed to be a finite number;
 - A lang-item type `NaNaN<T: Ieee754>` which wraps a `T` value guaranteed not to be a NaN;
 - A lang-item type `UniqNaN<T: Ieee754>`, which wraps a `T` value guaranteed not to be a NaN with a payload other than some arbitrary canonical sNaN payload and some arbitrary canonical qNaN payload. (Note that the sign bit is **NOT** part of the payload.)
 
@@ -86,7 +84,7 @@ Each wrapper type should implement `Copy` (`where T: Copy`), `TryFrom<T>`, `Into
 
 `UniqNaN<T>` could additionally implement `From<T>`, which would normalise NaNs into their designated unique representations and store all other values as they are.
 
-`Finite<T>` and `NaNaN<T>` should implement `Ord` and `Eq`.
+`NaNaN<T>` should implement `Ord` and `Eq`.
 
 # Drawbacks
 [drawbacks]: #drawbacks
@@ -102,7 +100,7 @@ Each wrapper type should implement `Copy` (`where T: Copy`), `TryFrom<T>`, `Into
 - The `UniqNaN` wrapper could be made not to distinguish between positive and negative NaNs, to disallow signalling NaNs, or both. The choice described above was taken to preserve that all features specified in the IEEE 754 standard be still available and safe for the wrapped type, including operations like abs and copySign (which manipulate the sign bit directly). While signalling NaNs are not supported by current Rust (constructing one is impossible in safe code), the author of this RFC expects that support for them may be added in the future, and as such it may be useful to reserve a signalling NaN bit pattern for `UniqNaN`.
 - Do not add `UniqNaN` as a lang-item type; instead use something like `enum UniqNaN<T: Ieee754> { NaNaN(NaNaN<T>), NaN, }`. This would move some of the burden of implementation from the compiler to the standard library, which is generally considered a good thing. However, implementing `UniqNaN` in the compiler would make it easier to elide NaN canonicalisations by taking advantage of IEEE 754 NaN propagation semantics, which specify that a NaN result of an operation on NaNs should have the same payload as one of its arguments (IEEE Std 754-1985, §6.2; IEEE Std 754-2008, §6.2.3). Doing the same with an enum type would put some burden on the optimiser.
 - Wait until const generics arrive and try to cook something up with those. A problem with that approach is that the domain restrictions proposed here are best expressed in terms of bit representations instead of abstract values. The bit-casting primitives of Rust are implemented in terms of `mem::transmute`, which cannot be made a `const fn` without significant additions to the compiler; although one may work around this by e.g. implementing the equivalent of `NaNaN<f64>` as a wrapper around `u64` with certain values forbidden and only converting to actual floating-point types when user code requests it. Nevertheless, even if const generics become expressive enough to cover this feature, it would still be beneficial to have a canonical form of it somewhere.
-- Instead of a generic wrapper type, create `UniqNaN32`, `UniqNaN64`, `NaNaN32`, `NaNaN64`, `Finite32`, `Finite64`. This would close the door to using this feature with custom types.
+- Instead of a generic wrapper type, create `UniqNaN32`, `UniqNaN64`, `NaNaN32`, `NaNaN64`. This would close the door to using this feature with custom types.
 
 # Unresolved questions
 [unresolved]: #unresolved-questions
